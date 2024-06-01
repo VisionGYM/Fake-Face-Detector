@@ -1,7 +1,6 @@
 import pytorch_lightning as pl
 import torch
 from torch import nn
-from torch.nn import functional as F
 from torchmetrics.functional import accuracy
 from torchvision import transforms, datasets
 from torch.utils.data import DataLoader, random_split
@@ -11,7 +10,19 @@ torch.set_float32_matmul_precision('high')  # 또는 'medium'
 
 # 기본 블록 정의
 class BasicBlock(nn.Module):
+    """_summary_
+
+    Args:
+        nn (_type_): _description_
+    """    
     def __init__(self, in_channels, out_channels, kernel_size=3):
+        """_summary_
+
+        Args:
+            in_channels (_type_): _description_
+            out_channels (_type_): _description_
+            kernel_size (int, optional): _description_. Defaults to 3.
+        """        
         super(BasicBlock, self).__init__()
         # 합성곱층의 정의
         self.c1 = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=1)
@@ -25,6 +36,14 @@ class BasicBlock(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
+        """_summary_
+
+        Args:
+            x (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """        
         # 스킵 커넥션을 위해 초기 입력 저장
         x_ = x
         # ResNet 기본 블록에서 F(x) 부분
@@ -44,7 +63,18 @@ class BasicBlock(nn.Module):
 
 # ResNet 모델 정의
 class ResNet(pl.LightningModule):
+    """_summary_
+
+    Args:
+        pl (_type_): _description_
+    """    
     def __init__(self, num_classes=10, lr=1e-4):
+        """_summary_
+
+        Args:
+            num_classes (int, optional): _description_. Defaults to 10.
+            lr (_type_, optional): _description_. Defaults to 1e-4.
+        """        
         super(ResNet, self).__init__()
         # 학습 주기
         self.lr = lr
@@ -69,6 +99,14 @@ class ResNet(pl.LightningModule):
         self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, x):
+        """_summary_
+
+        Args:
+            x (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """        
         # 첫 번째 블록과 풀링
         x = self.b1(x)
         x = self.pool(x)
@@ -93,6 +131,15 @@ class ResNet(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
+        """_summary_
+
+        Args:
+            batch (_type_): _description_
+            batch_idx (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """        
         # 학습 단계
         data, label = batch
         preds = self(data)
@@ -103,6 +150,15 @@ class ResNet(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
+        """_summary_
+
+        Args:
+            batch (_type_): _description_
+            batch_idx (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """        
         # 검증 단계
         data, label = batch
         preds = self(data)
@@ -113,6 +169,15 @@ class ResNet(pl.LightningModule):
         return loss
 
     def test_step(self, batch, batch_idx):
+        """_summary_
+
+        Args:
+            batch (_type_): _description_
+            batch_idx (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """        
         # 테스트 단계
         data, label = batch
         preds = self(data)
@@ -123,12 +188,28 @@ class ResNet(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """        
         # 옵티마이저 구성
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
 # CIFAR10 데이터 모듈 정의
 class CIFAR10DataModule(pl.LightningDataModule):
+    """_summary_
+
+    Args:
+        pl (_type_): _description_
+    """    
     def __init__(self, data_dir='./', batch_size=32):
+        """_summary_
+
+        Args:
+            data_dir (str, optional): _description_. Defaults to './'.
+            batch_size (int, optional): _description_. Defaults to 32.
+        """        
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -140,11 +221,18 @@ class CIFAR10DataModule(pl.LightningDataModule):
         ])
 
     def prepare_data(self):
+        """_summary_
+        """        
         # 데이터셋 다운로드
         datasets.CIFAR10(self.data_dir, train=True, download=True)
         datasets.CIFAR10(self.data_dir, train=False, download=True)
 
     def setup(self, stage=None):
+        """_summary_
+
+        Args:
+            stage (_type_, optional): _description_. Defaults to None.
+        """        
         # 데이터셋 로드 및 분할
         if stage in (None, 'fit'):
             cifar_full = datasets.CIFAR10(self.data_dir, train=True, transform=self.transform)
@@ -153,14 +241,29 @@ class CIFAR10DataModule(pl.LightningDataModule):
             self.cifar_test = datasets.CIFAR10(self.data_dir, train=False, transform=self.transform)
 
     def train_dataloader(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """        
         # 학습 데이터 로더
         return DataLoader(self.cifar_train, batch_size=self.batch_size, shuffle=True, num_workers=4, persistent_workers=True)
 
     def val_dataloader(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """        
         # 검증 데이터 로더
         return DataLoader(self.cifar_val, batch_size=self.batch_size, num_workers=4, persistent_workers=True)
 
     def test_dataloader(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """        
         # 테스트 데이터 로더
         return DataLoader(self.cifar_test, batch_size=self.batch_size, num_workers=4, persistent_workers=True)
 
